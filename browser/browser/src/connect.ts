@@ -17,11 +17,13 @@ import {
   createUserOperationHash,
 } from "abstractionkit";
 
-const ownerPublicAddress = "0xE4c711d31fe110bC4AD3A964d06088c2723de88E";
+const ownerPublicAddress = "0x4Ac9a72B2D7BC7d3650B41007242a040Fb8A087E";
 const newOwnerPublicAddress = "0xB0DA0323CD3604EfFDa69C3fD7645D30206E23B3";
 const jsonRpcNodeProvider =
   "https://eth-sepolia.g.alchemy.com/v2/HbaO4KM-hwt9C1MoCWkDn1WAiFyDDprn"; //"https://vesuvius-rpc.litprotocol.com"
 const bundlerUrl = "https://sepolia.voltaire.candidewallet.com/rpc";
+
+let storedGuardianSigner: any = null;
 
 const litcode = async () => {
   const initalizeClientsAndProvider = async () => {
@@ -105,22 +107,22 @@ const litcode = async () => {
   }
 
   const authNeededCallback = async (params: AuthCallbackParams) => {
+    console.log(`auth needed callback params`, JSON.stringify(params, null, 2));
     const response = await litNodeClient.signSessionKey({
       statement: params.statement,
       authMethods: [authMethod],
-      resourceAbilityRequests: 
-      [      
+      resourceAbilityRequests: [
         {
-        resource: new LitPKPResource("*"),
-        ability: LitAbility.PKPSigning,
-      },
-    ],
+          resource: new LitPKPResource("*"),
+          ability: LitAbility.PKPSigning,
+        },
+      ],
       expiration: params.expiration,
       resources: params.resources,
       chainId: 1,
-      pkpPublicKey: pkp.pkpPublicKey
+      pkpPublicKey: pkp.pkpPublicKey,
     });
-    console.log("AUTHSIG", response)
+    console.log("AUTHSIG", response);
     return response.authSig;
   };
 
@@ -132,7 +134,7 @@ const litcode = async () => {
         expiration: new Date(Date.now() + 60_000 * 60).toISOString(),
         resourceAbilityRequests: [
           {
-            resource: new LitActionResource("*"),
+            resource: new LitPKPResource("*"),
             ability: LitAbility.PKPSigning,
           },
         ],
@@ -149,10 +151,14 @@ const litcode = async () => {
 };
 
 export const addGuardian = async () => {
-  const guardianSigner = await litcode();
-  if (!guardianSigner) {
-    throw new Error("Guardian Signer is undefined.");
+  if (!storedGuardianSigner) {
+    storedGuardianSigner = await litcode();
+    if (!storedGuardianSigner) {
+      throw new Error("Guardian Signer is undefined.");
+    }
   }
+
+  const guardianSigner = storedGuardianSigner;
 
   const smartAccount = SafeAccount.initializeNewAccount([ownerPublicAddress]);
   console.log("Initialized Smart Account using ownerPublicAddress ✔️");
@@ -178,8 +184,9 @@ export const addGuardian = async () => {
   );
 
   // Prepare userOperation
+  
   let userOperation = await smartAccount.createUserOperation(
-    [addGuardianTx],
+    [enableModuleTx, addGuardianTx],
     jsonRpcNodeProvider,
     bundlerUrl
   );
@@ -261,7 +268,7 @@ export const addGuardian = async () => {
 
   // Sign userOperation
   console.log("Trying to sign userOperation");
-  /*
+  
   const domain = {
     chainId: import.meta.env.VITE_CHAIN_ID,
     verifyingContract: guardianSmartAccount.safe4337ModuleAddress,
@@ -278,10 +285,10 @@ export const addGuardian = async () => {
   };
   const signature = await guardianSigner._signTypedData(domain, types, safeUserOperation);
   const formatedSig = SafeAccount.formatEip712SignaturesToUseroperationSignature([guardianSignerAddress], [signature]);
-  userOperationRecovery.signature = formatedSig; */
-  const userOpHash = createUserOperationHash(userOperationRecovery, guardianSmartAccount.entrypointAddress, 11155111n);
-  const signature = await guardianSigner.signMessage(ethers.utils.arrayify(userOpHash));
-  userOperationRecovery.signature = signature;
+  userOperationRecovery.signature = formatedSig; 
+ // const userOpHash = createUserOperationHash(userOperationRecovery, guardianSmartAccount.entrypointAddress, 11155111n);
+  //const signature = await guardianSigner.signMessage(ethers.utils.arrayify(userOpHash));
+  //userOperationRecovery.signature = signature;
 
   console.log(
     "userOperationRecovery signature ✔️",
@@ -322,20 +329,27 @@ export const finilizeRecovery = async () => {
   const smartAccountAddress = smartAccount[0];
   console.log(smartAccountAddress);
 
-  const guardianSmartAccount = SafeAccount.initializeNewAccount(
-    [ownerPublicAddress],
-    { c2Nonce: 1n }
-  );
+  if (!storedGuardianSigner) {
+    throw new Error("Guardian Signer is not initialized. Call addGuardian first.");
+  }
+
+  const guardianSigner = storedGuardianSigner;
+  console.log(guardianSigner)
+  const guardianSignerAddress = await guardianSigner.getAddress();
 
   const srm = new SocialRecoveryModule();
   const finalizeRecoveryMetaTx =
     srm.createFinalizeRecoveryMetaTransaction(smartAccountAddress);
+    const guardianSmartAccount = SafeAccount.initializeNewAccount(
+      [guardianSignerAddress]
+    );
 
   let userOperationRecovery = await guardianSmartAccount.createUserOperation(
     [finalizeRecoveryMetaTx],
     jsonRpcNodeProvider,
     bundlerUrl
   );
+
 
   const paymasterUrl = import.meta.env.VITE_PAYMASTER_URL;
   const paymaster: CandidePaymaster = new CandidePaymaster(paymasterUrl);
