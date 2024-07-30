@@ -10,6 +10,7 @@ import { PKPEthersWallet } from "@lit-protocol/pkp-ethers";
 import { LitAbility, LitActionResource, LitPKPResource } from "@lit-protocol/auth-helpers";
 import { AuthCallbackParams, AuthMethod } from "@lit-protocol/types";
 import { ethers } from "ethers";
+import { LocalStorage } from "node-localstorage";
 import {
   SafeAccountV0_2_0 as SafeAccount,
   SocialRecoveryModule,
@@ -93,17 +94,28 @@ const litcode = async () => {
       //permittedAuthMethodScopes: [[AuthMethodScope.SignAnything]],
     //});
     const pkp = await litAuthClient.mintPKPWithAuthMethods([authMethod], {addPkpEthAddressAsPermittedAddress: true})
+
     //console.log("Mint Tx", mintTx);
     //const pkp = await provider.fetchPKPsThroughRelayer(authMethod);
     console.log("Fetched PKP", pkp)
+    localStorage.setItem('pkp', JSON.stringify(pkp));
     return pkp;
   };
 
-  const pkp = await mintWithGoogle(authMethod);
-
-  console.log("Minted PKP ✔️");
-  if (!pkp.pkpPublicKey){
-    return
+  let pkp;
+  const storedPkp = localStorage.getItem('pkp');
+  
+  if (storedPkp === null) {
+    pkp = await mintWithGoogle(authMethod);
+    localStorage.setItem('pkp', JSON.stringify(pkp));
+  } else {
+    pkp = JSON.parse(storedPkp);
+  }
+  
+  console.log("PKP retrieved ✔️");
+  if (!pkp || !pkp.pkpPublicKey) {
+    console.log("Invalid PKP data");
+    return;
   }
 
   const authNeededCallback = async (params: AuthCallbackParams) => {
