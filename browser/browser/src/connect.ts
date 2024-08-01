@@ -8,7 +8,7 @@ import { ProviderType, AuthMethodScope } from "@lit-protocol/constants";
 import { LitContracts } from "@lit-protocol/contracts-sdk";
 import { PKPEthersWallet } from "@lit-protocol/pkp-ethers";
 import { LitAbility, LitActionResource, LitPKPResource } from "@lit-protocol/auth-helpers";
-import { AuthCallbackParams, AuthMethod } from "@lit-protocol/types";
+import { AuthCallbackParams, AuthMethod, IRelayPKP } from "@lit-protocol/types";
 import { ethers } from "ethers";
 import { LocalStorage } from "node-localstorage";
 import {
@@ -98,25 +98,21 @@ const litcode = async () => {
     //console.log("Mint Tx", mintTx);
     //const pkp = await provider.fetchPKPsThroughRelayer(authMethod);
     console.log("Fetched PKP", pkp)
-    localStorage.setItem('pkp', JSON.stringify(pkp));
     return pkp;
   };
-
+  
+  // Fetch PKPs using the generated AuthMethod
   let pkp;
-  const storedPkp = localStorage.getItem('pkp');
-  
-  if (storedPkp === null) {
-    pkp = await mintWithGoogle(authMethod);
-    localStorage.setItem('pkp', JSON.stringify(pkp));
-  } else {
-    pkp = JSON.parse(storedPkp);
+  let pkps = await provider.fetchPKPsThroughRelayer(authMethod);
+
+  // If the AuthMethod has no PKPs, mint a new one with the AuthMethod generated from Google sign-in
+  if (pkps.length === 0) {
+    await mintWithGoogle(authMethod);
+    pkps = await provider.fetchPKPsThroughRelayer(authMethod);
   }
   
-  console.log("PKP retrieved ✔️");
-  if (!pkp || !pkp.pkpPublicKey) {
-    console.log("Invalid PKP data");
-    return;
-  }
+  // If we did not mint a new PKP, that means we already had one minted to the AuthMethod
+  pkp = pkps[0];
 
   const authNeededCallback = async (params: AuthCallbackParams) => {
     console.log(`auth needed callback params`, JSON.stringify(params, null, 2));
@@ -132,7 +128,7 @@ const litcode = async () => {
       expiration: params.expiration,
       resources: params.resources,
       chainId: 1,
-      pkpPublicKey: pkp.pkpPublicKey,
+      pkpPublicKey: pkp.publicKey,
     });
     console.log("AUTHSIG", response);
     return response.authSig;
@@ -153,10 +149,11 @@ const litcode = async () => {
         authNeededCallback: authNeededCallback,
       },
     },
-    pkpPubKey: pkp.pkpPublicKey,
+    pkpPubKey: pkp.publicKey,
     rpc: "https://yellowstone-rpc.litprotocol.com",
   });
-  console.log("Token ID", pkp.pkpTokenId)
+  console.log("Token ID", pkp.tokenId)
+  console.log(guardianSigner)
   console.log("Created PKPEthersWallet using the PKP ✔️");
 
   return guardianSigner;
