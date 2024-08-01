@@ -10,7 +10,6 @@ import { PKPEthersWallet } from "@lit-protocol/pkp-ethers";
 import { LitAbility, LitActionResource, LitPKPResource } from "@lit-protocol/auth-helpers";
 import { AuthCallbackParams, AuthMethod, IRelayPKP } from "@lit-protocol/types";
 import { ethers } from "ethers";
-import { LocalStorage } from "node-localstorage";
 import {
   SafeAccountV0_2_0 as SafeAccount,
   SocialRecoveryModule,
@@ -76,8 +75,7 @@ const litcode = async () => {
     }
 
     // Otherwise, the user has already authenticated with Google and we can
-    // generate an AuthMethod, save it to local storage, and use it to mint
-    // a PKP. After minting, we can fetch the PKP using the same AuthMethod.
+    // generate an AuthMethod. After minting, we can fetch the PKP using the same AuthMethod.
     else if (url.searchParams.get("provider") === "google") {
       const authMethod = await provider.authenticate();
       return authMethod;
