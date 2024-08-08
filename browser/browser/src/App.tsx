@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { addGuardian, finilizeRecovery } from "./connect";
+import { addGuardian, beginRecovery, finalizeRecovery } from "./connect";
 
 function App() {
   const [consoleOutput, setConsoleOutput] = useState<string[]>([]);
@@ -42,7 +42,10 @@ function App() {
         <button onClick={async () => await addGuardian()}>
           {isGoogleProvider ? "Add Guardian" : "Sign in with Google"}
         </button>
-        <button onClick={async () => await finilizeRecovery()}>
+        <button onClick={async () => await beginRecovery()}>
+          Begin Recovery
+        </button>
+        <button onClick={async () => await finalizeRecovery()}>
           Finalize Recovery
         </button>
         <h5>Console Output:</h5>
