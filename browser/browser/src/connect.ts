@@ -319,10 +319,6 @@ export const finalizeRecovery = async () => {
 
   const guardianSignerAddress = await guardianSigner.getAddress();
 
-  const enableModuleTx = srm.createEnableModuleMetaTransaction(
-    guardianSignerAddress
-  ); 
-
   const finalizeRecoveryMetaTx =
     srm.createFinalizeRecoveryMetaTransaction(smartAccountAddress);
     const guardianSmartAccount = SafeAccount.initializeNewAccount(
@@ -330,7 +326,7 @@ export const finalizeRecovery = async () => {
     );
 
   let userOperationRecovery = await guardianSmartAccount.createUserOperation(
-    [enableModuleTx, finalizeRecoveryMetaTx],
+    [finalizeRecoveryMetaTx],
     jsonRpcNodeProvider,
     bundlerUrl
   );
