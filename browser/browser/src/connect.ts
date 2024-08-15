@@ -149,7 +149,7 @@ const litSignIn = async () => {
   return guardianSigner;
 };
 
-export const addGuardian = async () => {
+export const initializeGuardianSigner = async () => {
   if (!guardianSigner) {
     guardianSigner = await litSignIn();
     if (!guardianSigner) {
@@ -157,28 +157,36 @@ export const addGuardian = async () => {
     }
   }
 
-  const enableModuleTx = srm.createEnableModuleMetaTransaction(
-    smartAccount.accountAddress
-  ); // Only when initializing a new smartAccount for the first time
-
   guardianSignerAddress = await guardianSigner.getAddress();
   if (!guardianSignerAddress) {
     throw new Error("Guardian Signer Address is undefined.");
   }
-  
-  guardianSmartAccount = SafeAccount.initializeNewAccount([
-    guardianSignerAddress,
-  ]);
+
+  guardianSmartAccount = SafeAccount.initializeNewAccount([guardianSignerAddress]);
+  console.log("Guardian Smart Account Initialized");
+};
+
+export const addGuardian = async () => {
+  // Ensure that the guardianSigner and guardianSmartAccount have been initialized
+  if (!guardianSigner || !guardianSmartAccount) {
+    throw new Error("Guardian Signer or Guardian Smart Account is not initialized.");
+  }
+
+  // Enable Module Meta Transaction (Only when initializing a new smartAccount for the first time)
+  const enableModuleTx = srm.createEnableModuleMetaTransaction(
+    smartAccount.accountAddress
+  );
+
+  // Create Add Guardian Meta Transaction
   const addGuardianTx = srm.createAddGuardianWithThresholdMetaTransaction(
     smartAccount.accountAddress,
     guardianSmartAccount.accountAddress, // Lit Guardian Address
-    1n //threshold
+    1n // threshold
   );
 
   // Prepare userOperation
-  
   let userOperation = await smartAccount.createUserOperation(
-    [enableModuleTx, addGuardianTx], // enableModuleTx, 
+    [enableModuleTx, addGuardianTx], // enableModuleTx,
     jsonRpcNodeProvider,
     bundlerUrl
   );
@@ -207,10 +215,10 @@ export const addGuardian = async () => {
   const userOperationReceiptResult = await sendUserOperationResponse.included();
   console.log("Included ✔️");
 
-  // check for success or error
+  // Check for success or error
   if (userOperationReceiptResult.success) {
     console.log(
-      "Successful Useroperation. The transaction hash is : " +
+      "Successful Useroperation. The transaction hash is: " +
         userOperationReceiptResult.receipt.transactionHash
     );
     const isGuardian = await srm.isGuardian(
@@ -220,7 +228,7 @@ export const addGuardian = async () => {
     );
     if (isGuardian) {
       console.log(
-        "Guardian added confirmed ✔️. Guardian address is : " +
+        "Guardian added confirmed ✔️. Guardian address is: " +
           guardianSmartAccount.accountAddress
       );
     } else {
@@ -231,8 +239,7 @@ export const addGuardian = async () => {
   }
 };
 
-  // Prepare Recovery tx
-
+// Prepare Recovery tx
 export const beginRecovery = async() => {
   
   const initiateRecoveryMetaTx = srm.createConfirmRecoveryMetaTransaction(

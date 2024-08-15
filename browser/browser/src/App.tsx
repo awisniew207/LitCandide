@@ -1,15 +1,14 @@
 import React, { useState, useEffect } from 'react';
-import { addGuardian, beginRecovery, finalizeRecovery } from "./connect";
+import { addGuardian, beginRecovery, finalizeRecovery, initializeGuardianSigner } from "./connect";
 
 function App() {
   const [consoleOutput, setConsoleOutput] = useState<string[]>([]);
   const [isGoogleProvider, setIsGoogleProvider] = useState(false);
 
+
   useEffect(() => {
-    // Check URL for provider parameter
     const url = new URL(window.location.href);
     setIsGoogleProvider(url.searchParams.get("provider") === "google");
-
     // Function to safely stringify any value, including BigInt
     const safeStringify = (obj: any): string => {
       return JSON.stringify(obj, (_, value) =>
@@ -39,8 +38,11 @@ function App() {
       <div className="card">
         <hr />
         <h3>Simple Lit + Candide code</h3>
+        <button onClick={async () => await initializeGuardianSigner()}>
+          {isGoogleProvider ? "Click Again" : "Initialize PKP Guardian"}
+        </button>
         <button onClick={async () => await addGuardian()}>
-          {isGoogleProvider ? "Add Guardian" : "Sign in with Google"}
+          Add Guardian Signer
         </button>
         <button onClick={async () => await beginRecovery()}>
           Begin Recovery
