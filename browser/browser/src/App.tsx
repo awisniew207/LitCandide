@@ -39,10 +39,10 @@ function App() {
         <hr />
         <h3>Simple Lit + Candide code</h3>
         <button onClick={async () => await initializeGuardianSigner()}>
-          {isGoogleProvider ? "Click Again" : "Initialize PKP Guardian"}
+          {isGoogleProvider ? "Verify Google Account" : "Sign into Google"}
         </button>
         <button onClick={async () => await addGuardian()}>
-          Add Guardian Signer
+          Add Guardian
         </button>
         <button onClick={async () => await beginRecovery()}>
           Begin Recovery

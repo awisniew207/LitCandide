@@ -13,13 +13,13 @@ import {
   CandidePaymaster,
 } from "abstractionkit";
 
-const ownerPublicAddress = "0xe64Daec99F89484Ecaec0e418cC08afE57335c70";
-const newOwnerPublicAddress = "0xF92FbA41716C0818F724ecBc46EDb1BC9672e91B";
-const jsonRpcNodeProvider =
-  "https://eth-sepolia.g.alchemy.com/v2/HbaO4KM-hwt9C1MoCWkDn1WAiFyDDprn";
-const bundlerUrl = "https://sepolia.voltaire.candidewallet.com/rpc";
+const ownerPublicAddress = import.meta.env.VITE_OWNER_PUBLIC_ADDRESS;
+const newOwnerPublicAddress = import.meta.env.VITE_NEW_OWNER_PUBLIC_ADDRESS;
+const jsonRpcNodeProvider = import.meta.env.VITE_JSON_RPC_PROVIDER;
+const bundlerUrl = import.meta.env.VITE_BUNDLER_URL;
+const chainId = BigInt(import.meta.env.VITE_CHAIN_ID);
 
-const paymaster = new CandidePaymaster("https://api.candide.dev/paymaster/v1/sepolia/f70ee1e3efa3f7a67ff392eb99dafc78");
+const paymaster = new CandidePaymaster(import.meta.env.VITE_PAYMASTER_URL);
 const smartAccount: SafeAccount = SafeAccount.initializeNewAccount([ownerPublicAddress]);
 const srm: SocialRecoveryModule = new SocialRecoveryModule();
 
@@ -39,7 +39,7 @@ const litSignIn = async () => {
     // Use LitAuthClient to handle authentication through the Lit login
     const litAuthClient = new LitAuthClient({
       litRelayConfig: {
-        relayApiKey: "Anything",
+        relayApiKey: import.meta.env.VITE_LIT_API_KEY,
       },
       litNodeClient,
     });
@@ -201,7 +201,7 @@ export const addGuardian = async () => {
   userOperation.signature = smartAccount.signUserOperation(
     userOperation,
     [import.meta.env.VITE_OWNER_PRIVATE_KEY],
-    import.meta.env.VITE_CHAIN_ID
+    chainId
   );
 
   // Submit userOperation
@@ -270,7 +270,7 @@ export const beginRecovery = async() => {
   console.log("Trying to sign userOperation");
   
   const domain = {
-    chainId: import.meta.env.VITE_CHAIN_ID,
+    chainId,
     verifyingContract: guardianSmartAccount.safe4337ModuleAddress,
   };
   
@@ -309,7 +309,7 @@ export const beginRecovery = async() => {
   console.log("Useroperation sent. Waiting to be included ......");
   const userOperationReceiptResultRecovery =
     await sendUserOperationResponseRecovery.included();
-  console.log("Useroperation included:", userOperationReceiptResultRecovery);
+  console.log("Useroperation included:", userOperationReceiptResultRecovery.receipt.transactionHash);
 };
 
 // Can only finalize after grace period is over
@@ -338,8 +338,6 @@ export const finalizeRecovery = async () => {
     bundlerUrl
   );
 
-  const paymasterUrl = import.meta.env.VITE_PAYMASTER_URL;
-  const paymaster: CandidePaymaster = new CandidePaymaster(paymasterUrl);
   userOperationRecovery = await paymaster.createSponsorPaymasterUserOperation(
     userOperationRecovery,
     bundlerUrl
@@ -352,7 +350,7 @@ export const finalizeRecovery = async () => {
   );
 
   const domain = {
-    chainId: import.meta.env.VITE_CHAIN_ID,
+    chainId,
     verifyingContract: guardianSmartAccount.safe4337ModuleAddress,
   };
   
@@ -380,5 +378,5 @@ export const finalizeRecovery = async () => {
   console.log("Useroperation sent. Waiting to be included ......");
   const userOperationReceiptResultRecovery =
     await sendUserOperationResponseRecovery.included();
-  console.log(userOperationReceiptResultRecovery);
+  console.log(userOperationReceiptResultRecovery.transaction.receipt);
 };
