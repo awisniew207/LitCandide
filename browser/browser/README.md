@@ -1,6 +1,8 @@
 # Getting Started with a Lit SDK Browser Implementation
 
-This is a very simple example repository for getting started with a browser implementation of the Lit SDK. All it will do is connect an instance of the `LitNodeClient` to the Lit Network. If you are searching for more developed uses of Lit, the [Developer Guides Code](https://github.com/LIT-Protocol/developer-guides-code) repository is for you. 
+This is a very simple example repository for getting started with a browser implementation of the Lit SDK and Candide AbstractionKit. The specifics of what this implementation does can be found in the docs pages:
+- [Add a Google Account as Safe Recovery Method using Lit (Guide 1/2)](https://hackmd.io/TeFu2k56SgG4HCQQFZOqig)
+- [Recover a Safe Account with Google using AbstractionKit (Guide 2/2)](https://hackmd.io/@sednaoui/BJiTAzG5C)
 
 ## Using This Repository
 
@@ -13,14 +15,7 @@ yarn install
 yarn run dev
 ```
 
-Afterward, your terminal should inform you that the application is being displayed at `http://localhost:5173/`. Clicking the `Connect` button will send a log to your browser, informing you of the connection to the Lit Network.
+Afterward, your terminal should inform you that the application is being displayed at `http://localhost:5173/`. After logging in with (and verifying) your Google account, 
 
-# Other Frameworks
-
-If you would like to use frameworks other than React, a repository similar to this one can be setup using the steps below:
-1. `yarn create vite`
-2. Choose project name, framework, and configuration of choice.
-3. `yarn add @lit-protocol/lit-node-client`
-4. Be sure to use Polyfills since this is a browser implementation. Make your `vite.config` file similar to the one in this repository.
 
 

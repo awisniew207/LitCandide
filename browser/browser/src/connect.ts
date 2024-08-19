@@ -107,7 +107,6 @@ const litSignIn = async () => {
   pkp = pkps[0];
 
   const authNeededCallback = async (params: AuthCallbackParams) => {
-    console.log(`auth needed callback params`, JSON.stringify(params, null, 2));
     const response = await litNodeClient.signSessionKey({
       statement: params.statement,
       authMethods: [authMethod],
@@ -152,18 +151,13 @@ const litSignIn = async () => {
 export const initializeGuardianSigner = async () => {
   if (!guardianSigner) {
     guardianSigner = await litSignIn();
-    if (!guardianSigner) {
-      throw new Error("Guardian Signer is undefined.");
-    }
   }
 
-  guardianSignerAddress = await guardianSigner.getAddress();
-  if (!guardianSignerAddress) {
-    throw new Error("Guardian Signer Address is undefined.");
+  if(guardianSigner) {
+    guardianSignerAddress = await guardianSigner.getAddress();
+    guardianSmartAccount = SafeAccount.initializeNewAccount([guardianSignerAddress]);
+    console.log("Guardian Smart Account Initialized");
   }
-
-  guardianSmartAccount = SafeAccount.initializeNewAccount([guardianSignerAddress]);
-  console.log("Guardian Smart Account Initialized");
 };
 
 export const addGuardian = async () => {
@@ -310,6 +304,11 @@ export const beginRecovery = async() => {
   const userOperationReceiptResultRecovery =
     await sendUserOperationResponseRecovery.included();
   console.log("Useroperation included:", userOperationReceiptResultRecovery.receipt.transactionHash);
+  const recoveryTime = new Date(Date.now() + 180_000);
+  const formattedRecoveryTime = recoveryTime.toLocaleString();
+  
+  console.log("❗❗❗ The recovery has been sent. The recovery can be finalized in 3 minutes, at: ", formattedRecoveryTime, " ❗❗❗");
+  
 };
 
 // Can only finalize after grace period is over
@@ -318,7 +317,6 @@ export const finalizeRecovery = async () => {
     ownerPublicAddress,
   ]);
   const smartAccountAddress = smartAccount[0];
-  console.log(smartAccountAddress);
 
   if (!guardianSigner) {
     throw new Error("Guardian Signer is not initialized. Call addGuardian first.");
@@ -378,5 +376,6 @@ export const finalizeRecovery = async () => {
   console.log("Useroperation sent. Waiting to be included ......");
   const userOperationReceiptResultRecovery =
     await sendUserOperationResponseRecovery.included();
-  console.log(userOperationReceiptResultRecovery.transaction.receipt);
+  console.log(userOperationReceiptResultRecovery.receipt.transaction);
+  console.log("Recovery Completed!")
 };
